@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Med Voice Assistant - Backend Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+        .card h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            color: #555;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            width: 100%;
+        }
+        button:hover {
+            transform: translateY(-2px);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        button.mic-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 15px;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin: 10px auto;
+        }
+        button.mic-button.recording {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 15px rgba(255, 107, 107, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(255, 107, 107, 0);
+            }
+        }
+        .voice-input-section {
+            border: 2px dashed #667eea;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            background: #f8f9ff;
+            margin-bottom: 15px;
+        }
+        .transcription-display {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 12px;
+            margin: 10px 0;
+            min-height: 40px;
+            font-size: 0.95rem;
+            color: #333;
+        }
+        .transcription-display.interim {
+            color: #999;
+            font-style: italic;
+        }
+        .list-container {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .doctor-item, .appointment-item {
+            background: #f8f9fa;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+        }
+        .doctor-item strong {
+            color: #333;
+            display: block;
+            margin-bottom: 5px;
+        }
+        .doctor-item small {
+            color: #666;
+            display: block;
+            font-size: 0.85rem;
+        }
+        .appointment-item {
+            border-left-color: #764ba2;
+        }
+        .appointment-item p {
+            color: #555;
+            font-size: 0.95rem;
+            margin-bottom: 3px;
+        }
+        .response {
+            background: #f1f3f5;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            color: #333;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .response.success {
+            background: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .response.error {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        .full-width {
+            grid-column: 1 / -1;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-weight: 600;
+            text-align: center;
+        }
+        .status.connected {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+            h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏥 Med Voice Assistant Backend Tester</h1>
+        <div id="status" class="status disconnected">Checking connection...</div>
+
+        <div class="grid">
+            <!-- Doctors Section -->
+            <div class="card">
+                <h2>👨‍⚕️ Doctors</h2>
+                <button onclick="fetchDoctors()">Load Doctors</button>
+                <div id="doctorsList" class="list-container" style="margin-top: 15px;"></div>
+                <div id="doctorsResponse" class="response"></div>
+            </div>
+
+            <!-- Appointments Section -->
+            <div class="card">
+                <h2> Appointments</h2>
+                <button onclick="fetchAppointments()">Load Appointments</button>
+                <div id="appointmentsList" class="list-container" style="margin-top: 15px;"></div>
+                <div id="appointmentsResponse" class="response"></div>
+            </div>
+
+            <!-- Create Appointment -->
+            <div class="card">
+                <h2> Create Appointment</h2>
+                <div class="form-group">
+                    <label for="doctorId">Doctor ID</label>
+                    <input type="number" id="doctorId" placeholder="1" required>
+                </div>
+                <div class="form-group">
+                    <label for="patientName">Patient Name</label>
+                    <input type="text" id="patientName" placeholder="John Doe" required>
+                </div>
+                <div class="form-group">
+                    <label for="appointmentDate">Date (YYYY-MM-DD)</label>
+                    <input type="text" id="appointmentDate" placeholder="2026-06-10" required>
+                </div>
+                <div class="form-group">
+                    <label for="appointmentTime">Time (HH:MM)</label>
+                    <input type="text" id="appointmentTime" placeholder="10:30" required>
+                </div>
+                <div class="form-group">
+                    <label for="symptoms">Symptoms</label>
+                    <textarea id="symptoms" placeholder="Describe symptoms..."></textarea>
+                </div>
+                <button onclick="createAppointment()">Create Appointment</button>
+                <div id="createResponse" class="response"></div>
+            </div>
+
+            <!-- Voice Booking -->
+            <div class="card">
+                <h2> Voice Consultation</h2>
+                
+                <div class="voice-input-section">
+                    <p style="color: #666; margin-bottom: 15px;">Start a voice consultation - the assistant will ask questions to find the best doctor for you</p>
+                    <button onclick="startVoiceConsultation()" style="width: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); margin-bottom: 10px;">Start Consultation</button>
+                    
+                    <p style="color: #666; margin-top: 15px; margin-bottom: 10px; font-size: 0.9rem;">Or continue with manual recording:</p>
+                    <button class="mic-button" id="micButton" onclick="toggleRecording()" title="Click to start/stop recording">🎙️</button>
+                    <div id="recordingStatus" style="margin-top: 10px; font-weight: 600; color: #667eea; display: none;">Recording...</div>
+                    
+                    <div id="interimTranscription" class="transcription-display interim" style="display: none; margin-top: 10px;"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="voiceTranscript">Voice Transcript</label>
+                    <textarea id="voiceTranscript" placeholder="Your speech will appear here..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="voicePatientName">Patient Name</label>
+                    <input type="text" id="voicePatientName" placeholder="Your name" required>
+                </div>
+                <div class="form-group">
+                    <label for="voiceSymptoms">Symptoms</label>
+                    <textarea id="voiceSymptoms" placeholder="Your symptoms..."></textarea>
+                </div>
+                <button onclick="voiceBook()">Book Appointment</button>
+                <div id="voiceResponse" class="response"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000/api';
+        
+        // Speech Recognition Setup
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition;
+        let isRecording = false;
+        let finalTranscript = '';
+
+        // Conversation State
+        let conversationState = 'idle'; // idle, asking_name, asking_symptoms, asking_specialty, asking_location, asking_date, asking_time, recommending
+        let userSymptoms = '';
+        let userPreferredSpecialty = '';
+        let userPreferredLocation = '';
+        let userPatientName = '';
+        let userPreferredDate = '';
+        let userPreferredTime = '';
+        let availableDoctors = [];
+
+        // Text-to-Speech Setup
+        function speak(text) {
+            // Cancel any ongoing speech
+            window.speechSynthesis.cancel();
+            
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 1;
+            utterance.pitch = 1;
+            utterance.volume = 1;
+            utterance.lang = 'en-US';
+            
+            window.speechSynthesis.speak(utterance);
+        }
+
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'en-US';
+
+            recognition.onstart = () => {
+                isRecording = true;
+                finalTranscript = '';
+                document.getElementById('micButton').classList.add('recording');
+                document.getElementById('recordingStatus').style.display = 'block';
+            };
+
+            recognition.onresult = (event) => {
+                let interimTranscript = '';
+
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript + ' ';
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+
+                // Display interim results
+                if (interimTranscript) {
+                    document.getElementById('interimTranscription').textContent = interimTranscript;
+                    document.getElementById('interimTranscription').style.display = 'block';
+                } else {
+                    document.getElementById('interimTranscription').style.display = 'none';
+                }
+
+                // Update final transcript
+                const finalText = finalTranscript + interimTranscript;
+                document.getElementById('voiceTranscript').value = finalText.trim();
+            };
+
+            recognition.onerror = (event) => {
+                const errorEl = document.getElementById('voiceResponse');
+                errorEl.textContent = `Speech recognition error: ${event.error}`;
+                errorEl.className = 'response error';
+            };
+
+            recognition.onend = () => {
+                isRecording = false;
+                document.getElementById('micButton').classList.remove('recording');
+                document.getElementById('recordingStatus').style.display = 'none';
+                document.getElementById('interimTranscription').style.display = 'none';
+                
+                // Process user input based on conversation state
+                const userInput = finalTranscript.trim().toLowerCase();
+                if (userInput) {
+                    processUserInput(userInput);
+                }
+            };
+        }
+
+        function toggleRecording() {
+            if (!SpeechRecognition) {
+                alert('Speech Recognition API is not supported in this browser. Please use Chrome, Edge, or Safari.');
+                return;
+            }
+
+            if (isRecording) {
+                recognition.stop();
+            } else {
+                // Clear previous transcript
+                document.getElementById('voiceTranscript').value = '';
+                finalTranscript = '';
+                document.getElementById('voiceResponse').textContent = '';
+                recognition.start();
+            }
+        }
+
+        function startVoiceConsultation() {
+            conversationState = 'asking_name';
+            document.getElementById('voiceTranscript').value = '';
+            speak("Hello! Welcome to Med Voice Assistant. What is your name?");
+            setTimeout(() => {
+                recognition.start();
+            }, 1000);
+        }
+
+        async function processUserInput(userInput) {
+            const responseEl = document.getElementById('voiceResponse');
+
+            if (conversationState === 'asking_name') {
+                userPatientName = userInput.charAt(0).toUpperCase() + userInput.slice(1);
+                document.getElementById('voicePatientName').value = userPatientName;
+                
+                conversationState = 'asking_symptoms';
+                const message = `Nice to meet you, ${userPatientName}! Could you please describe your symptoms or what brings you in today?`;
+                responseEl.textContent = message;
+                responseEl.className = 'response success';
+                speak(message);
+                
+                setTimeout(() => {
+                    recognition.start();
+                }, 1500);
+            } 
+            else if (conversationState === 'asking_symptoms') {
+                userSymptoms = userInput;
+                document.getElementById('voiceSymptoms').value = userSymptoms;
+                
+                conversationState = 'asking_specialty';
+                const message = `I see. You mentioned "${userSymptoms}". Are you looking for a specific type of doctor? For example, General Practitioner, Cardiologist, Dermatologist, Pediatrician, or any other specialty?`;
+                responseEl.textContent = message;
+                responseEl.className = 'response success';
+                speak(message);
+                
+                setTimeout(() => {
+                    recognition.start();
+                }, 1500);
+            }
+            else if (conversationState === 'asking_specialty') {
+                userPreferredSpecialty = userInput;
+                
+                conversationState = 'asking_location';
+                const message = `Great! A ${userInput} it is. Do you have a preferred location or doctor's office area where you'd like to visit?`;
+                responseEl.textContent = message;
+                responseEl.className = 'response success';
+                speak(message);
+                
+                setTimeout(() => {
+                    recognition.start();
+                }, 1500);
+            }
+            else if (conversationState === 'asking_location') {
+                userPreferredLocation = userInput;
+                
+                conversationState = 'asking_date';
+                const message = `Perfect! Which date would you prefer for your appointment? Please say the date in the format like June 10th, or 2026-06-10`;
+                responseEl.textContent = message;
+                responseEl.className = 'response success';
+                speak(message);
+                
+                setTimeout(() => {
+                    recognition.start();
+                }, 1500);
+            }
+            else if (conversationState === 'asking_date') {
+                userPreferredDate = userInput;
+                document.getElementById('appointmentDate').value = userInput;
+                
+                conversationState = 'asking_time';
+                const message = `Excellent! And what time would you prefer? Please say the time like 10:30 AM, 2 PM, or similar`;
+                responseEl.textContent = message;
+                responseEl.className = 'response success';
+                speak(message);
+                
+                setTimeout(() => {
+                    recognition.start();
+                }, 1500);
+            }
+            else if (conversationState === 'asking_time') {
+                userPreferredTime = userInput;
+                document.getElementById('appointmentTime').value = userInput;
+                
+                conversationState = 'recommending';
+                // Fetch doctors and find best match
+                await findAndRecommendDoctor(responseEl);
+            }
+        }
+
+        async function findAndRecommendDoctor(responseEl) {
+            try {
+                // Fetch available doctors
+                const res = await fetch(`${API_BASE}/doctors/`);
+                availableDoctors = await res.json();
+
+                // Simple matching algorithm
+                let bestDoctor = null;
+                let highestScore = 0;
+
+                availableDoctors.forEach(doctor => {
+                    let score = 0;
+
+                    // Check specialty match
+                    if (userPreferredSpecialty && doctor.specialty.toLowerCase().includes(userPreferredSpecialty.toLowerCase())) {
+                        score += 50;
+                    }
+
+                    // Check location match
+                    if (userPreferredLocation && doctor.location.toLowerCase().includes(userPreferredLocation.toLowerCase())) {
+                        score += 30;
+                    }
+
+                    // Bonus for General Practitioner if no specific specialty
+                    if (!userPreferredSpecialty && doctor.specialty.toLowerCase().includes('general')) {
+                        score += 20;
+                    }
+
+                    if (score > highestScore) {
+                        highestScore = score;
+                        bestDoctor = doctor;
+                    }
+                });
+
+                if (!bestDoctor) {
+                    bestDoctor = availableDoctors[0]; // Fallback to first doctor
+                }
+
+                // Display recommendation
+                const recommendationText = `Perfect! Based on your symptoms and preferences, I recommend Dr. ${bestDoctor.name}, a ${bestDoctor.specialty} specialist located in ${bestDoctor.location}. I'll now book your appointment for ${userPreferredDate} at ${userPreferredTime}. Confirming your booking...`;
+                
+                responseEl.textContent = recommendationText;
+                responseEl.className = 'response success';
+                
+                // Auto-fill all appointment fields
+                document.getElementById('doctorId').value = bestDoctor.id;
+                
+                speak(recommendationText);
+                
+                // Automatically book the appointment
+                setTimeout(() => {
+                    bookAppointmentAuto(bestDoctor.id);
+                }, 2000);
+
+            } catch (err) {
+                responseEl.textContent = 'Error fetching doctors: ' + err.message;
+                responseEl.className = 'response error';
+                speak('Sorry, I encountered an error while searching for doctors.');
+                conversationState = 'idle';
+            }
+        }
+
+        async function bookAppointmentAuto(doctorId) {
+            const responseEl = document.getElementById('voiceResponse');
+            const payload = {
+                doctorId: doctorId,
+                patientName: userPatientName,
+                date: userPreferredDate,
+                time: userPreferredTime,
+                symptoms: userSymptoms,
+            };
+
+            try {
+                const res = await fetch(`${API_BASE}/appointments/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+                const data = await res.json();
+                
+                if (res.ok) {
+                    const successMessage = `Excellent! Your appointment has been successfully booked! ${userPatientName}, your appointment details have been confirmed. You can view them in the appointments list.`;
+                    responseEl.textContent = successMessage;
+                    responseEl.className = 'response success';
+                    speak(successMessage);
+                } else {
+                    const errorMessage = `There was an issue booking your appointment. Error: ${data.error || 'Unknown error'}`;
+                    responseEl.textContent = errorMessage;
+                    responseEl.className = 'response error';
+                    speak(errorMessage);
+                }
+                
+                conversationState = 'idle';
+            } catch (err) {
+                const errorMessage = `Error booking appointment: ${err.message}`;
+                responseEl.textContent = errorMessage;
+                responseEl.className = 'response error';
+                speak('Sorry, there was an error completing your booking. Please try again.');
+                conversationState = 'idle';
+            }
+        }
+
+        // Check backend connection
+        async function checkConnection() {
+            try {
+                const response = await fetch(API_BASE.replace('/api', ''));
+                if (response.ok) {
+                    updateStatus(true);
+                    return true;
+                }
+            } catch (err) {
+                updateStatus(false);
+                return false;
+            }
+        }
+
+        function updateStatus(connected) {
+            const statusEl = document.getElementById('status');
+            if (connected) {
+                statusEl.className = 'status connected';
+                statusEl.textContent = '✅ Backend connected!';
+            } else {
+                statusEl.className = 'status disconnected';
+                statusEl.textContent = '❌ Backend not reachable at ' + API_BASE;
+            }
+        }
+
+        async function fetchDoctors() {
+            const responseEl = document.getElementById('doctorsResponse');
+            const listEl = document.getElementById('doctorsList');
+            try {
+                const res = await fetch(`${API_BASE}/doctors/`);
+                const data = await res.json();
+                responseEl.textContent = JSON.stringify(data, null, 2);
+                responseEl.className = 'response success';
+
+                listEl.innerHTML = data.map(doc => `
+                    <div class="doctor-item">
+                        <strong>ID: ${doc.id} - ${doc.name}</strong>
+                        <small>Specialty: ${doc.specialty}</small>
+                        <small>Location: ${doc.location}</small>
+                    </div>
+                `).join('');
+            } catch (err) {
+                responseEl.textContent = 'Error: ' + err.message;
+                responseEl.className = 'response error';
+            }
+        }
+
+        async function fetchAppointments() {
+            const responseEl = document.getElementById('appointmentsResponse');
+            const listEl = document.getElementById('appointmentsList');
+            try {
+                const res = await fetch(`${API_BASE}/appointments/`);
+                const data = await res.json();
+                responseEl.textContent = JSON.stringify(data, null, 2);
+                responseEl.className = 'response success';
+
+                listEl.innerHTML = data.map(appt => `
+                    <div class="appointment-item">
+                        <p><strong>${appt.patientName}</strong> with ${appt.doctor.name}</p>
+                        <p>📅 ${appt.date} at ${appt.time}</p>
+                        <p>Symptoms: ${appt.symptoms || 'None'}</p>
+                    </div>
+                `).join('');
+            } catch (err) {
+                responseEl.textContent = 'Error: ' + err.message;
+                responseEl.className = 'response error';
+            }
+        }
+
+        async function createAppointment() {
+            const responseEl = document.getElementById('createResponse');
+            const payload = {
+                doctorId: parseInt(document.getElementById('doctorId').value),
+                patientName: document.getElementById('patientName').value,
+                date: document.getElementById('appointmentDate').value,
+                time: document.getElementById('appointmentTime').value,
+                symptoms: document.getElementById('symptoms').value,
+            };
+
+            try {
+                const res = await fetch(`${API_BASE}/appointments/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+                const data = await res.json();
+                responseEl.textContent = JSON.stringify(data, null, 2);
+                responseEl.className = res.ok ? 'response success' : 'response error';
+            } catch (err) {
+                responseEl.textContent = 'Error: ' + err.message;
+                responseEl.className = 'response error';
+            }
+        }
+
+        async function voiceBook() {
+            const responseEl = document.getElementById('voiceResponse');
+            const payload = {
+                transcript: document.getElementById('voiceTranscript').value,
+                patientName: document.getElementById('voicePatientName').value,
+                symptoms: document.getElementById('voiceSymptoms').value,
+            };
+
+            try {
+                const res = await fetch(`${API_BASE}/voice/book/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+                const data = await res.json();
+                responseEl.textContent = JSON.stringify(data, null, 2);
+                responseEl.className = res.ok ? 'response success' : 'response error';
+            } catch (err) {
+                responseEl.textContent = 'Error: ' + err.message;
+                responseEl.className = 'response error';
+            }
+        }
+
+        // Check connection on load
+        window.addEventListener('load', checkConnection);
+    </script>
+</body>
+</html>
